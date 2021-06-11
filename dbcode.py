@@ -9,6 +9,7 @@ listahan = []
 quants = []
 outofstock = []
 totalsss = []
+sales = [0]
 
 class BS(Ui_MainWindow, QMainWindow):
 	def __init__(self):
@@ -330,6 +331,7 @@ class BS(Ui_MainWindow, QMainWindow):
 					self.listoforder.addItem(str(item2) + "-----" + str(item3) + "....." + "P " + str(total) + "0")
 					self.totals += total
 					totalsss.append(total)
+
 					self.amount.setText(str(self.totals) + "0")
 					self.paymentpaid.setEnabled(True)
 
@@ -459,6 +461,7 @@ class BS(Ui_MainWindow, QMainWindow):
 				self.reciepts.addItem('Change: P ' + str(change) + '0')
 				self.reciepts.addItem('Total/Bill: P ' + str(self.totals) + '0')
 				self.reciepts.addItem('Thank you for ordering, Visit us again!')
+
 				totalsss.clear()
 				self.orders = []
 				self.listoforder.clear()
@@ -474,6 +477,11 @@ class BS(Ui_MainWindow, QMainWindow):
 						self.toalsales += self.totals
 						a = self.toalsales
 
+						sales[0] = a
+						for i in sales:
+							x = i
+						qq = x
+						
 						check = "select * from totalsales where datetime=%s;"
 						data = (date,)
 						connection.execute(check, data)
@@ -482,7 +490,7 @@ class BS(Ui_MainWindow, QMainWindow):
 
 						if c > 0:
 							add = "update totalsales set totalsales=%s where datetime=%s;"
-							data = (a, date)
+							data = (qq, date)
 							connection.execute(add, data)
 							self.conn.commit()
 
@@ -498,7 +506,7 @@ class BS(Ui_MainWindow, QMainWindow):
 
 						else:
 							add = "insert into totalsales(datetime, totalsales) values(%s, %s);"
-							data = (date, a)
+							data = (date, qq)
 							connection.execute(add, data)
 							self.conn.commit()
 
@@ -516,6 +524,10 @@ class BS(Ui_MainWindow, QMainWindow):
 						connection = self.conn.cursor()
 						self.toalsales += self.totals
 						a = self.toalsales
+						sales[0] = a
+						for i in sales:
+							x = i
+						qq = x
 
 						check = "select * from totalsales where datetime=%s;"
 						data = (date,)
@@ -525,7 +537,7 @@ class BS(Ui_MainWindow, QMainWindow):
 
 						if c > 0:
 							add = "update totalsales set totalsales=%s where datetime=%s;"
-							data = (a,date)
+							data = (qq,date)
 							connection.execute(add, data)
 							self.conn.commit()
 
@@ -540,7 +552,7 @@ class BS(Ui_MainWindow, QMainWindow):
 
 						else:
 							add = "insert into totalsales(datetime, totalsales) values(%s, %s);"
-							data = (date, a)
+							data = (date, qq)
 							connection.execute(add, data)
 							self.conn.commit()
 
@@ -666,7 +678,7 @@ class BS(Ui_MainWindow, QMainWindow):
 
 		self.items_3.setRowCount(0)
 		for row_number, row_data in enumerate(connection):
-			self.items_3.insertRow(row_data)
+			self.items_3.insertRow(row_number)
 			for colum_number, data in enumerate(row_data):
 				self.items_3.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
 
