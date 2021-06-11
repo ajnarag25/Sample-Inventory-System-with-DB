@@ -36,6 +36,8 @@ class BS(Ui_MainWindow, QMainWindow):
 		self.passWord.textChanged.connect(self.errorBlank)
 		self.pushButton.clicked.connect(self.adminadd)
 		self.pushButton_2.clicked.connect(self.admindel)
+		self.searchbutton.clicked.connect(self.adminsearch)
+		self.refresh.clicked.connect(self.adminrefresh)
 		self.loginBtn.setEnabled(False)
 
 		# Staff
@@ -66,6 +68,21 @@ class BS(Ui_MainWindow, QMainWindow):
 		self.toalsales = 0
 		self.orders = []
 	# --------------------------------------------------------------------------------------------------------------#
+		connection = self.conn.cursor()
+		connection.execute("select itemname,quantity,price from products;")
+		get = connection.fetchall()
+
+		for x in get:
+			convert1 = x[0] + ''
+			convert2 = x[1]
+			convert3 = x[2]+.0
+			print(convert1)
+			print(int(convert2))
+			print(int(convert3))
+			listahan.append([convert1, convert3])
+			quants.append(convert2)
+			self.comboBox.addItem(convert1)
+
 		connection1 = self.conn.cursor()
 		connection1.execute("select itemname,quantity,price from products;")
 		self.items.setRowCount(0)
@@ -158,6 +175,7 @@ class BS(Ui_MainWindow, QMainWindow):
 	def showadmin(self):
 		txt1 = self.userName.text()
 		txt2 = self.passWord.text()
+
 		if txt1 and txt2 != 'admin':
 			QMessageBox.warning(self, "Invalid Credentials", "Please Input All the Necessary Information Needed!")
 			self.userName.clear()
@@ -232,6 +250,7 @@ class BS(Ui_MainWindow, QMainWindow):
 			quants.append(item2)
 			self.comboBox.addItem(item1)
 
+
 			self.spinBox.setValue(1)
 			self.price.setValue(1)
 
@@ -290,77 +309,116 @@ class BS(Ui_MainWindow, QMainWindow):
 				if item2 == listahan[i][0]:
 					go = i
 					x = listahan[i][1]
+					txts = listahan[i][0]
 			chk1 = quants[go]
 			chk2 = x
+			c = txts
 
 			if item3 > chk1:
 				QMessageBox.warning(self,"Not Enough Stocks Available!",str(item2) + "------" + str(chk1) +"-"+ "stock/s are available.")
 				self.quantity_2.setValue(chk1)
 
 			else:
-				total = chk2 * item3
-				orders = chk1 - item3
-				quants[go] = orders
-				self.orders.append(str(item2) + "-----" + str(orders) + "....." + "P " + str(total) + "0")
-				self.listoforder.addItem(str(item2) + "-----" + str(orders) + "....." + "P " + str(total) + "0")
-				self.totals += total
-				totalsss.append(total)
-				self.amount.setText(str(self.totals)+"0")
-				self.paymentpaid.setEnabled(True)
-
-				connection = self.conn.cursor()
-
-				add1 = "update products set quantity=%s where itemname=%s;"
-				data1 = (orders,item2)
-				connection.execute(add1, data1)
-				self.conn.commit()
-
-				add2 = "insert into orders(name, datetime, amount) values(%s, %s, %s);"
-				data = (item1, date, item3)
-				connection.execute(add2, data)
-				self.conn.commit()
-				QMessageBox.about(self, "Added Successfully", "The Order/s was added Successfully")
-
-				connection.execute("select name,datetime,amount from orders;")
-
-				self.items_3.setRowCount(0)
-				for row_number, row_data in enumerate(connection):
-					self.items_3.insertRow(row_number)
-					for colum_number, data in enumerate(row_data):
-						self.items_3.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
-
-				if orders == 0:
-					outofstock.append(item2)
+				ask = QMessageBox.question(self, "Reminder", "Are you sure you want to add this in the list of order?",
+											 QMessageBox.Yes | QMessageBox.No)
+				if ask == QMessageBox.Yes:
+					self.customername.setEnabled(False)
+					total = chk2 * item3
+					orders = chk1 - item3
+					quants[go] = orders
+					self.orders.append(str(item2) + "-----" + str(item3) + "....." + "P " + str(total) + "0")
+					self.listoforder.addItem(str(item2) + "-----" + str(item3) + "....." + "P " + str(total) + "0")
+					self.totals += total
+					totalsss.append(total)
+					self.amount.setText(str(self.totals) + "0")
+					self.paymentpaid.setEnabled(True)
 
 					connection = self.conn.cursor()
-					add1 = "insert into outofstocks(itemname) values(%s);"
-					data1 = (item2,)
+
+					add1 = "update products set quantity=%s where itemname=%s;"
+					data1 = (orders, item2)
 					connection.execute(add1, data1)
-					add2 = "delete from products where itemname=%s ;"
-					data2 = (item2,)
-					connection.execute(add2, data2)
 					self.conn.commit()
 
-					connection.execute("select itemname from outofstocks;")
-					self.items_5.setRowCount(0)
-					for row_number, row_data in enumerate(connection):
-						self.items_5.insertRow(row_number)
-						for colum_number, data in enumerate(row_data):
-							self.items_5.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+					if orders == 0:
+						if item2 == c:
+							a = self.comboBox.findText(c)
+							self.comboBox.removeItem(a)
+							outofstock.append(item2)
 
-					connection.execute("select itemname,quantity,price from products;")
-					self.items.setRowCount(0)
-					for row_number, row_data in enumerate(connection):
-						self.items.insertRow(row_number)
-						for colum_number, data in enumerate(row_data):
-							self.items.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+							connection = self.conn.cursor()
+							add1 = "insert into outofstocks(itemname) values(%s);"
+							data1 = (item2,)
+							connection.execute(add1, data1)
+							add2 = "delete from products where itemname=%s ;"
+							data2 = (item2,)
+							connection.execute(add2, data2)
+							self.conn.commit()
 
-					connection.execute("select itemname,quantity,price from products;")
-					self.items_2.setRowCount(0)
-					for row_number, row_data in enumerate(connection):
-						self.items_2.insertRow(row_number)
-						for colum_number, data in enumerate(row_data):
-							self.items_2.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+							connection.execute("select itemname from outofstocks;")
+							self.items_5.setRowCount(0)
+							for row_number, row_data in enumerate(connection):
+								self.items_5.insertRow(row_number)
+								for colum_number, data in enumerate(row_data):
+									self.items_5.setItem(row_number, colum_number,
+														 QtWidgets.QTableWidgetItem(str(data)))
+
+							connection.execute("select itemname,quantity,price from products;")
+							self.items.setRowCount(0)
+							for row_number, row_data in enumerate(connection):
+								self.items.insertRow(row_number)
+								for colum_number, data in enumerate(row_data):
+									self.items.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+
+							connection.execute("select itemname,quantity,price from products;")
+							self.items_2.setRowCount(0)
+							for row_number, row_data in enumerate(connection):
+								self.items_2.insertRow(row_number)
+								for colum_number, data in enumerate(row_data):
+									self.items_2.setItem(row_number, colum_number,
+														 QtWidgets.QTableWidgetItem(str(data)))
+
+					x = self.totals
+					check = "select * from orders where name=%s;"
+					data = (item1,)
+					connection.execute(check, data)
+					go = connection.fetchall()
+					c = len(go)
+
+					if c > 0:
+						add = "update orders set amount=%s where name=%s;"
+						data = (x, item1)
+						connection.execute(add, data)
+						self.conn.commit()
+						QMessageBox.about(self, "Added Successfully", "The Order/s was added Successfully")
+
+						connection.execute("select name,datetime,amount from orders;")
+
+						self.items_3.setRowCount(0)
+						for row_number, row_data in enumerate(connection):
+							self.items_3.insertRow(row_number)
+							for colum_number, data in enumerate(row_data):
+								self.items_3.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+
+					else:
+						add2 = "insert into orders(name, datetime, amount) values(%s, %s, %s);"
+						data = (item1, date, total)
+						connection.execute(add2, data)
+						self.conn.commit()
+						QMessageBox.about(self, "Added Successfully", "The Order/s was added Successfully")
+
+						connection.execute("select name,datetime,amount from orders;")
+
+						self.items_3.setRowCount(0)
+						for row_number, row_data in enumerate(connection):
+							self.items_3.insertRow(row_number)
+							for colum_number, data in enumerate(row_data):
+								self.items_3.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+				else:
+					pass
+
+	def cashiercancel(self):
+		pass
 
 	def payment(self):
 		client = self.customername.text()
@@ -387,6 +445,7 @@ class BS(Ui_MainWindow, QMainWindow):
 			self.paymentpaid_2.setValue(0)
 
 			if prompt == QMessageBox.Yes:
+				self.customername.setEnabled(True)
 				self.paymentpaid_3.setEnabled(True)
 				self.reciepts.addItem('MY RECIPE BAKING SUPPLIES Co.')
 				self.reciepts.addItem('(+63)9955598635')
@@ -398,7 +457,9 @@ class BS(Ui_MainWindow, QMainWindow):
 				self.reciepts.addItem('-------------------------------------')
 				self.reciepts.addItem('Money: P ' + str(money) + '0')
 				self.reciepts.addItem('Change: P ' + str(change) + '0')
+				self.reciepts.addItem('Total/Bill: P ' + str(self.totals) + '0')
 				self.reciepts.addItem('Thank you for ordering, Visit us again!')
+				totalsss.clear()
 				self.orders = []
 				self.listoforder.clear()
 				self.customername.clear()
@@ -433,6 +494,8 @@ class BS(Ui_MainWindow, QMainWindow):
 									self.items_4.setItem(row_number, colum_number,
 														 QtWidgets.QTableWidgetItem(str(data)))
 
+							self.totals = 0
+
 						else:
 							add = "insert into totalsales(datetime, totalsales) values(%s, %s);"
 							data = (date, a)
@@ -446,6 +509,8 @@ class BS(Ui_MainWindow, QMainWindow):
 								for colum_number, data in enumerate(row_data):
 									self.items_4.setItem(row_number, colum_number,
 														 QtWidgets.QTableWidgetItem(str(data)))
+
+							self.totals = 0
 
 					else:
 						connection = self.conn.cursor()
@@ -471,6 +536,8 @@ class BS(Ui_MainWindow, QMainWindow):
 								for colum_number, data in enumerate(row_data):
 									self.items_4.setItem(row_number, colum_number,
 														 QtWidgets.QTableWidgetItem(str(data)))
+							self.totals = 0
+
 						else:
 							add = "insert into totalsales(datetime, totalsales) values(%s, %s);"
 							data = (date, a)
@@ -483,6 +550,8 @@ class BS(Ui_MainWindow, QMainWindow):
 								self.items_4.insertRow(row_number)
 								for colum_number, data in enumerate(row_data):
 									self.items_4.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+
+							self.totals = 0
 			else:
 				pass
 
@@ -553,6 +622,7 @@ class BS(Ui_MainWindow, QMainWindow):
 		connection.execute(check, data)
 		go = connection.fetchall()
 		c = len(go)
+
 		if c > 0:
 			a = "delete from products where itemname=%s ;"
 			dat1 = (txt,)
@@ -586,6 +656,29 @@ class BS(Ui_MainWindow, QMainWindow):
 		else:
 			QMessageBox.warning(self, "Invalid Credentials", "Can't Read in the Database!")
 
+	def adminsearch(self):
+		line = self.customername_2.text()
+		connection = self.conn.cursor()
+
+		query = 'select * from orders where name like "%'+line +'%";'
+		data = (line)
+		connection.execute(query, data)
+
+		self.items_3.setRowCount(0)
+		for row_number, row_data in enumerate(connection):
+			self.items_3.insertRow(row_data)
+			for colum_number, data in enumerate(row_data):
+				self.items_3.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
+
+	def adminrefresh(self):
+		connection = self.conn.cursor()
+		connection.execute("select name,datetime,amount from orders;")
+
+		self.items_3.setRowCount(0)
+		for row_number, row_data in enumerate(connection):
+			self.items_3.insertRow(row_number)
+			for colum_number, data in enumerate(row_data):
+				self.items_3.setItem(row_number, colum_number, QtWidgets.QTableWidgetItem(str(data)))
 
 	# --------------------------------------------------------------------------------------------------------------#
 
